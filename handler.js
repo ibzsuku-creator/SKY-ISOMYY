@@ -55,7 +55,13 @@ async function handleMessages(sock, { messages, type }) {
 
         chatId = message.key.remoteJid;
         const isGroup = chatId.endsWith('@g.us');
-        const senderId = message.key.participant || message.key.remoteJid;
+        // ⚠️ En chat privé, remoteJid = la PERSONNE EN FACE, pas "moi". Si c'est moi
+        // (fromMe) qui tape la commande, la cible "privée" (mon MP) doit être mon
+        // propre numéro, sinon les médias "waouh"/"humm" atterrissent dans la
+        // conversation avec l'autre personne au lieu de rester privés.
+        const senderId = message.key.fromMe
+            ? (sock.user?.id?.split(':')[0].split('@')[0] + '@s.whatsapp.net')
+            : (message.key.participant || message.key.remoteJid);
         const isOwnerOrSudo = message.key.fromMe || senderId.split('@')[0] === settings.developerNumber || senderId.split('@')[0] === settings.ownerContact;
 
         const rawText = getText(message);
@@ -158,4 +164,3 @@ async function handleMessages(sock, { messages, type }) {
 }
 
 module.exports = { handleMessages };
-
