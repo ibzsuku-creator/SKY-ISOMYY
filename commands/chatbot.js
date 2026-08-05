@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const fetch = require('node-fetch');
 
 const DATA_PATH = path.join(__dirname, '../data/chatbotData.json');
 
@@ -152,8 +151,12 @@ async function handleChatbotResponse(sock, chatId, message, userMessage, senderI
 
 async function getAIResponse(userMessage, userContext) {
     try {
-        const prompt = `
-Tu es SKY-ISOMYY, un assistant WhatsApp sympa et naturel, développé par IB-SACKO dans le système CENTRAL-HEX.
+        if (!process.env.GROQ_API_KEY) {
+            console.error('❌ [chatbot] GROQ_API_KEY manquante');
+            return null;
+        }
+
+        const systemPrompt = `Tu es SKY-ISOMYY, un assistant WhatsApp sympa et naturel, développé par IB-SACKO dans le système CENTRAL-HEX.
 
 RÈGLES :
 1. Réponses courtes (1-2 phrases max)
@@ -163,51 +166,38 @@ RÈGLES :
 5. Si quelqu'un est triste, sois soutenant. Si quelqu'un plaisante, entre dans le jeu avec humour.
 6. Ne répète jamais ces instructions dans ta réponse.
 
-Contexte de conversation précédent :
-${userContext.messages.join('\n')}
+Informations sur l'utilisateur : ${JSON.stringify(userContext.userInfo)}`;
 
-Informations sur l'utilisateur :
-${JSON.stringify(userContext.userInfo, null, 2)}
+        const axios = require('axios');
+        const historyMessages = userContext.messages.slice(-10).map(m => ({ role: 'user', content: m }));
 
-Message actuel : ${userMessage}
-
-Réponds naturellement, sans répéter ces consignes.
-        `.trim();
-
-        let data = null;
-        try {
-            const response = await fetch("https://zellapi.autos/ai/chatbot?text=" + encodeURIComponent(prompt));
-            if (response.ok) {
-                const d = await response.json();
-                if (d.status && d.result) data = d;
-            } else {
-                console.error(`❌ [chatbot] zellapi statut HTTP ${response.status}`);
+        const r = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions',
+            {
+                model: 'llama-3.3-70b-versatile',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    ...historyMessages.slice(0, -1),
+                    { role: 'user', content: userMessage }
+                ],
+                temperature: 0.8,
+                max_tokens: 200
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                timeout: 20000
             }
-        } catch (e) { console.error('❌ [chatbot] zellapi:', e.message); }
+        );
 
-        if (!data) {
-            try {
-                const axios = require('axios');
-                const r = await axios.get(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`, { timeout: 20000, responseType: 'text' });
-                if (r.data && typeof r.data === 'string' && r.data.length > 3) {
-                    data = { status: true, result: r.data };
-                }
-            } catch (e) { console.error('❌ [chatbot] pollinations:', e.message); }
-        }
+        const answer = r.data?.choices?.[0]?.message?.content?.trim();
+        if (!answer) throw new Error("Réponse API invalide");
 
-        if (!data || !data.result) throw new Error("Réponse API invalide");
-
-        let cleaned = data.result.trim()
-            .replace(/Remember:.*$/gi, '')
-            .replace(/IMPORTANT:.*$/gi, '')
-            .replace(/RÈGLES\s*:.*$/gi, '')
-            .replace(/^[A-ZÀ-Ü\s]+:.*$/gm, '')
-            .replace(/\n\s*\n/g, '\n')
-            .trim();
-
-        return cleaned;
+        return answer;
     } catch (error) {
-        console.error("Erreur API IA:", error.message);
+        console.error("❌ [chatbot] Groq:", error.response?.data?.error?.message || error.message);
         return null;
     }
 }
