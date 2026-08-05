@@ -180,8 +180,10 @@ Réponds naturellement, sans répéter ces consignes.
             if (response.ok) {
                 const d = await response.json();
                 if (d.status && d.result) data = d;
+            } else {
+                console.error(`❌ [chatbot] zellapi statut HTTP ${response.status}`);
             }
-        } catch {}
+        } catch (e) { console.error('❌ [chatbot] zellapi:', e.message); }
 
         if (!data) {
             try {
@@ -190,7 +192,7 @@ Réponds naturellement, sans répéter ces consignes.
                 if (r.data && typeof r.data === 'string' && r.data.length > 3) {
                     data = { status: true, result: r.data };
                 }
-            } catch {}
+            } catch (e) { console.error('❌ [chatbot] pollinations:', e.message); }
         }
 
         if (!data || !data.result) throw new Error("Réponse API invalide");
