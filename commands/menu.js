@@ -14,12 +14,12 @@ async function menuCommand(sock, chatId, message) {
                 𝐂𝐄𝐍𝐓𝐑𝐀-𝐇𝐄𝐗
 ╔══════𝗚𝗘𝗡𝗘𝗥𝗔𝗟══════>
 ║❒ menu → Menu
-║❒ mode public/private → Accès
+║❒ mode public/private 
 ║❒ help → Aide
 ║❒ ping → Vitesse
-║❒ waouh → Save vue unique → MP
+║❒ waouh → vue unique1 
 ║❒ owner → Créateur
-║❒ humm → Save vue unique → MP
+║❒ humm → vue unique2
 ║❒ tagall → Mention all
 ║❒ gpt <question> → IA
 ║❒ chatbot → Discussion libre
