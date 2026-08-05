@@ -1,0 +1,28 @@
+{
+  "name": "sky-isomyy",
+  "version": "1.0.0",
+  "description": "SKY-ISOMYY - Bot WhatsApp sans préfixe avec connexion web (QR + code pairing) - CENTRAL-HEX",
+  "main": "web.js",
+  "scripts": {
+    "start": "node web.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": ["whatsapp-bot"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@whiskeysockets/baileys": "^v7.0.0-rc.9",
+    "@hapi/boom": "^10.0.1",
+    "pino": "^8.21.0",
+    "qrcode": "^1.5.4",
+    "dotenv": "^16.4.5",
+    "axios": "^1.8.4",
+    "yt-search": "^2.12.1",
+    "node-fetch": "^2.7.0",
+    "mumaker": "^2.0.0",
+    "express": "^4.19.2"
+  }
+}
+
