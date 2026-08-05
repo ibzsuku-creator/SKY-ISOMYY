@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: sky-isomyy
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    envVars:
+      - key: PORT
+        value: 3000
+    disk:
+      name: sky-isomyy-sessions
+      mountPath: /app/sessions
+      sizeGB: 1
+
