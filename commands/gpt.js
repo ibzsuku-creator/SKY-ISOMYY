@@ -58,7 +58,10 @@ async function gptCommand(sock, chatId, message) {
                     answer = result.trim();
                     break;
                 }
-            } catch (e) { continue; }
+            } catch (e) {
+                console.error(`❌ [gpt] API échouée: ${e.message}`);
+                continue;
+            }
         }
 
         if (!answer) {
