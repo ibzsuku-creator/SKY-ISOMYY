@@ -21,47 +21,40 @@ async function gptCommand(sock, chatId, message) {
             }, { quoted: message });
         }
 
+        if (!process.env.GROQ_API_KEY) {
+            return await sock.sendMessage(chatId, {
+                text: `❌ *IA non configurée.*\n_Il manque la clé GROQ_API_KEY sur le serveur._`,
+            }, { quoted: message });
+        }
+
         await sock.sendMessage(chatId, { react: { text: '🤖', key: message.key } });
 
         const systemPrompt = getPrompt();
-        const q = encodeURIComponent(query);
-        const sq = encodeURIComponent(`${systemPrompt}\n\n${query}`);
-
-        // APIs avec axios (plus fiable que node-fetch)
-        const apis = [
-            // Pollinations — gratuit sans clé
-            () => axios.get(`https://text.pollinations.ai/${sq}`, { timeout: 20000, responseType: 'text' })
-                .then(r => typeof r.data === 'string' && r.data.length > 5 ? r.data : null),
-
-            // GiftedTech
-            () => axios.get(`https://api.giftedtech.my.id/api/ai/geminiai?apikey=gifted&q=${sq}`, { timeout: 15000 })
-                .then(r => r.data?.result || r.data?.answer || null),
-
-            // Siputzx
-            () => axios.get(`https://api.siputzx.my.id/api/ai/gemini-pro?content=${sq}`, { timeout: 15000 })
-                .then(r => r.data?.message || r.data?.data || null),
-
-            // Ryzendesu
-            () => axios.get(`https://api.ryzendesu.vip/api/ai/gemini?text=${sq}`, { timeout: 15000 })
-                .then(r => r.data?.message || r.data?.answer || null),
-
-            // XTeam
-            () => axios.get(`https://api.xteam.xyz/ai?text=${sq}&apikey=d90a9e986e18778b`, { timeout: 15000 })
-                .then(r => r.data?.result || r.data?.response || null),
-        ];
-
         let answer = null;
-        for (const api of apis) {
-            try {
-                const result = await api();
-                if (result && typeof result === 'string' && result.trim().length > 3) {
-                    answer = result.trim();
-                    break;
+
+        try {
+            const r = await axios.post(
+                'https://api.groq.com/openai/v1/chat/completions',
+                {
+                    model: 'llama-3.3-70b-versatile',
+                    messages: [
+                        { role: 'system', content: systemPrompt },
+                        { role: 'user', content: query }
+                    ],
+                    temperature: 0.7,
+                    max_tokens: 800
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    timeout: 20000
                 }
-            } catch (e) {
-                console.error(`❌ [gpt] API échouée: ${e.message}`);
-                continue;
-            }
+            );
+            answer = r.data?.choices?.[0]?.message?.content?.trim() || null;
+        } catch (e) {
+            console.error(`❌ [gpt] Groq échoué: ${e.response?.status || ''} ${e.response?.data?.error?.message || e.message}`);
         }
 
         if (!answer) {
